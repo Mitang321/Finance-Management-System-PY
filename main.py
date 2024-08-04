@@ -1,14 +1,22 @@
 import csv
 from datetime import datetime
+import matplotlib.pyplot as plt
+import getpass
 
 
 class FinanceTracker:
     def __init__(self, filename='finance.csv'):
         self.filename = filename
         self.fields = ['date', 'type', 'amount', 'category', 'description']
+        self.users_file = 'users.csv'
 
         with open(self.filename, mode='a', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=self.fields)
+            if file.tell() == 0:
+                writer.writeheader()
+
+        with open(self.users_file, mode='a', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=['username', 'password'])
             if file.tell() == 0:
                 writer.writeheader()
 
@@ -84,71 +92,172 @@ class FinanceTracker:
         except ValueError:
             return False
 
+    def plot_expenses_vs_income(self):
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        expenses = [0] * 12
+        incomes = [0] * 12
+
+        with open(self.filename, mode='r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                entry_date = datetime.strptime(row['date'], '%Y-%m-%d')
+                if row['type'] == 'Expense':
+                    expenses[entry_date.month - 1] += float(row['amount'])
+                elif row['type'] == 'Income':
+                    incomes[entry_date.month - 1] += float(row['amount'])
+
+        plt.plot(months, expenses, label='Expenses')
+        plt.plot(months, incomes, label='Incomes')
+        plt.xlabel('Month')
+        plt.ylabel('Amount')
+        plt.title('Monthly Expenses vs Incomes')
+        plt.legend()
+        plt.show()
+
+    def register_user(self, username, password):
+        with open(self.users_file, mode='a', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=['username', 'password'])
+            writer.writerow({'username': username, 'password': password})
+
+    def authenticate_user(self, username, password):
+        with open(self.users_file, mode='r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                if row['username'] == username and row['password'] == password:
+                    return True
+        return False
+
+    def generate_expense_category_report(self):
+        categories = {}
+        with open(self.filename, mode='r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                if row['type'] == 'Expense':
+                    if row['category'] not in categories:
+                        categories[row['category']] = 0
+                    categories[row['category']] += float(row['amount'])
+
+        print("Expense Category Report")
+        for category, total in categories.items():
+            print(f"{category}: {total}")
+
+    def generate_income_category_report(self):
+        categories = {}
+        with open(self.filename, mode='r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                if row['type'] == 'Income':
+                    if row['category'] not in categories:
+                        categories[row['category']] = 0
+                    categories[row['category']] += float(row['amount'])
+
+        print("Income Category Report")
+        for category, total in categories.items():
+            print(f"{category}: {total}")
+
 
 if __name__ == "__main__":
     tracker = FinanceTracker()
 
     while True:
         print("\nFinance Tracker")
-        print("1. Add Expense")
-        print("2. Add Income")
-        print("3. View Entries")
-        print("4. Delete Entry")
-        print("5. Generate Monthly Report")
-        print("6. Generate Category Report")
-        print("7. Exit")
+        print("1. Register")
+        print("2. Login")
+        print("3. Exit")
         choice = input("Choose an option: ")
 
         if choice == '1':
-            date = input("Enter date (YYYY-MM-DD): ")
-            if not tracker.is_valid_date(date):
-                print("Invalid date format. Please enter date in YYYY-MM-DD format.")
-                continue
-            amount = input("Enter amount: ")
-            if not tracker.is_valid_amount(amount):
-                print("Invalid amount. Please enter a positive number.")
-                continue
-            amount = float(amount)
-            category = input("Enter category: ")
-            description = input("Enter description: ")
-            tracker.add_entry(date, 'Expense', amount, category, description)
+            username = input("Enter username: ")
+            password = getpass.getpass("Enter password: ")
+            tracker.register_user(username, password)
+            print("User registered successfully.")
         elif choice == '2':
-            date = input("Enter date (YYYY-MM-DD): ")
-            if not tracker.is_valid_date(date):
-                print("Invalid date format. Please enter date in YYYY-MM-DD format.")
-                continue
-            amount = input("Enter amount: ")
-            if not tracker.is_valid_amount(amount):
-                print("Invalid amount. Please enter a positive number.")
-                continue
-            amount = float(amount)
-            category = input("Enter category: ")
-            description = input("Enter description: ")
-            tracker.add_entry(date, 'Income', amount, category, description)
+            username = input("Enter username: ")
+            password = getpass.getpass("Enter password: ")
+            if tracker.authenticate_user(username, password):
+                print("Login successful.")
+                while True:
+                    print("\nFinance Tracker")
+                    print("1. Add Expense")
+                    print("2. Add Income")
+                    print("3. View Entries")
+                    print("4. Delete Entry")
+                    print("5. Generate Monthly Report")
+                    print("6. Generate Category Report")
+                    print("7. Plot Expenses vs Income")
+                    print("8. Generate Expense Category Report")
+                    print("9. Generate Income Category Report")
+                    print("10. Logout")
+                    user_choice = input("Choose an option: ")
+
+                    if user_choice == '1':
+                        date = input("Enter date (YYYY-MM-DD): ")
+                        if not tracker.is_valid_date(date):
+                            print(
+                                "Invalid date format. Please enter date in YYYY-MM-DD format.")
+                            continue
+                        amount = input("Enter amount: ")
+                        if not tracker.is_valid_amount(amount):
+                            print("Invalid amount. Please enter a positive number.")
+                            continue
+                        amount = float(amount)
+                        category = input("Enter category: ")
+                        description = input("Enter description: ")
+                        tracker.add_entry(
+                            date, 'Expense', amount, category, description)
+                    elif user_choice == '2':
+                        date = input("Enter date (YYYY-MM-DD): ")
+                        if not tracker.is_valid_date(date):
+                            print(
+                                "Invalid date format. Please enter date in YYYY-MM-DD format.")
+                            continue
+                        amount = input("Enter amount: ")
+                        if not tracker.is_valid_amount(amount):
+                            print("Invalid amount. Please enter a positive number.")
+                            continue
+                        amount = float(amount)
+                        category = input("Enter category: ")
+                        description = input("Enter description: ")
+                        tracker.add_entry(
+                            date, 'Income', amount, category, description)
+                    elif user_choice == '3':
+                        tracker.view_entries()
+                    elif user_choice == '4':
+                        date = input("Enter date (YYYY-MM-DD): ")
+                        if not tracker.is_valid_date(date):
+                            print(
+                                "Invalid date format. Please enter date in YYYY-MM-DD format.")
+                            continue
+                        entry_type = input("Enter type (Expense/Income): ")
+                        amount = input("Enter amount: ")
+                        if not tracker.is_valid_amount(amount):
+                            print("Invalid amount. Please enter a positive number.")
+                            continue
+                        category = input("Enter category: ")
+                        description = input("Enter description: ")
+                        tracker.delete_entry(
+                            date, entry_type, amount, category, description)
+                    elif user_choice == '5':
+                        month = int(input("Enter month (MM): "))
+                        year = int(input("Enter year (YYYY): "))
+                        tracker.generate_monthly_report(month, year)
+                    elif user_choice == '6':
+                        category = input("Enter category: ")
+                        tracker.generate_category_report(category)
+                    elif user_choice == '7':
+                        tracker.plot_expenses_vs_income()
+                    elif user_choice == '8':
+                        tracker.generate_expense_category_report()
+                    elif user_choice == '9':
+                        tracker.generate_income_category_report()
+                    elif user_choice == '10':
+                        break
+                    else:
+                        print("Invalid choice. Please try again.")
+            else:
+                print("Authentication failed. Please try again.")
         elif choice == '3':
-            tracker.view_entries()
-        elif choice == '4':
-            date = input("Enter date (YYYY-MM-DD): ")
-            if not tracker.is_valid_date(date):
-                print("Invalid date format. Please enter date in YYYY-MM-DD format.")
-                continue
-            entry_type = input("Enter type (Expense/Income): ")
-            amount = input("Enter amount: ")
-            if not tracker.is_valid_amount(amount):
-                print("Invalid amount. Please enter a positive number.")
-                continue
-            category = input("Enter category: ")
-            description = input("Enter description: ")
-            tracker.delete_entry(date, entry_type, amount,
-                                 category, description)
-        elif choice == '5':
-            month = int(input("Enter month (MM): "))
-            year = int(input("Enter year (YYYY): "))
-            tracker.generate_monthly_report(month, year)
-        elif choice == '6':
-            category = input("Enter category: ")
-            tracker.generate_category_report(category)
-        elif choice == '7':
             break
         else:
             print("Invalid choice. Please try again.")
