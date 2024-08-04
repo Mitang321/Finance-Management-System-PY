@@ -2,38 +2,39 @@ import csv
 from datetime import datetime
 
 
-class ExpenseTracker:
-    def __init__(self, filename='expenses.csv'):
+class FinanceTracker:
+    def __init__(self, filename='finance.csv'):
         self.filename = filename
-        self.fields = ['date', 'amount', 'category', 'description']
+        self.fields = ['date', 'type', 'amount', 'category', 'description']
 
         with open(self.filename, mode='a', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=self.fields)
             if file.tell() == 0:
                 writer.writeheader()
 
-    def add_expense(self, date, amount, category, description):
+    def add_entry(self, date, entry_type, amount, category, description):
         with open(self.filename, mode='a', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=self.fields)
-            writer.writerow({'date': date, 'amount': amount,
+            writer.writerow({'date': date, 'type': entry_type, 'amount': amount,
                             'category': category, 'description': description})
 
-    def view_expenses(self):
+    def view_entries(self):
         with open(self.filename, mode='r') as file:
             reader = csv.DictReader(file)
             for row in reader:
                 print(
-                    f"{row['date']}: {row['amount']} - {row['category']} ({row['description']})")
+                    f"{row['date']}: {row['type']} - {row['amount']} - {row['category']} ({row['description']})")
 
 
 if __name__ == "__main__":
-    tracker = ExpenseTracker()
+    tracker = FinanceTracker()
 
     while True:
-        print("\nExpense Tracker")
+        print("\nFinance Tracker")
         print("1. Add Expense")
-        print("2. View Expenses")
-        print("3. Exit")
+        print("2. Add Income")
+        print("3. View Entries")
+        print("4. Exit")
         choice = input("Choose an option: ")
 
         if choice == '1':
@@ -41,10 +42,16 @@ if __name__ == "__main__":
             amount = float(input("Enter amount: "))
             category = input("Enter category: ")
             description = input("Enter description: ")
-            tracker.add_expense(date, amount, category, description)
+            tracker.add_entry(date, 'Expense', amount, category, description)
         elif choice == '2':
-            tracker.view_expenses()
+            date = input("Enter date (YYYY-MM-DD): ")
+            amount = float(input("Enter amount: "))
+            category = input("Enter category: ")
+            description = input("Enter description: ")
+            tracker.add_entry(date, 'Income', amount, category, description)
         elif choice == '3':
+            tracker.view_entries()
+        elif choice == '4':
             break
         else:
             print("Invalid choice. Please try again.")
