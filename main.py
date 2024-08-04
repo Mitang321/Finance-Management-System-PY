@@ -2,6 +2,7 @@ import csv
 from datetime import datetime
 import matplotlib.pyplot as plt
 import getpass
+from fpdf import FPDF
 
 
 class FinanceTracker:
@@ -10,6 +11,7 @@ class FinanceTracker:
         self.fields = ['date', 'type', 'amount', 'category', 'description']
         self.users_file = 'users.csv'
 
+        # Create the files with headers if they don't exist
         with open(self.filename, mode='a', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=self.fields)
             if file.tell() == 0:
@@ -156,6 +158,36 @@ class FinanceTracker:
         for category, total in categories.items():
             print(f"{category}: {total}")
 
+    def export_to_pdf(self, month, year):
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
+
+        pdf.cell(
+            200, 10, txt=f"Monthly Report for {month}/{year}", ln=True, align='C')
+
+        total_expenses = 0
+        total_incomes = 0
+
+        with open(self.filename, mode='r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                entry_date = datetime.strptime(row['date'], '%Y-%m-%d')
+                if entry_date.month == month and entry_date.year == year:
+                    pdf.cell(
+                        200, 10, txt=f"{row['date']}: {row['type']} - {row['amount']} - {row['category']} ({row['description']})", ln=True)
+                    if row['type'] == 'Expense':
+                        total_expenses += float(row['amount'])
+                    elif row['type'] == 'Income':
+                        total_incomes += float(row['amount'])
+
+        balance = total_incomes - total_expenses
+        pdf.cell(200, 10, txt=f"Total Expenses: {total_expenses}", ln=True)
+        pdf.cell(200, 10, txt=f"Total Incomes: {total_incomes}", ln=True)
+        pdf.cell(200, 10, txt=f"Balance: {balance}", ln=True)
+
+        pdf.output(f"Monthly_Report_{month}_{year}.pdf")
+
 
 if __name__ == "__main__":
     tracker = FinanceTracker()
@@ -188,7 +220,8 @@ if __name__ == "__main__":
                     print("7. Plot Expenses vs Income")
                     print("8. Generate Expense Category Report")
                     print("9. Generate Income Category Report")
-                    print("10. Logout")
+                    print("10. Export Monthly Report to PDF")
+                    print("11. Logout")
                     user_choice = input("Choose an option: ")
 
                     if user_choice == '1':
@@ -252,6 +285,10 @@ if __name__ == "__main__":
                     elif user_choice == '9':
                         tracker.generate_income_category_report()
                     elif user_choice == '10':
+                        month = int(input("Enter month (MM): "))
+                        year = int(input("Enter year (YYYY): "))
+                        tracker.export_to_pdf(month, year)
+                    elif user_choice == '11':
                         break
                     else:
                         print("Invalid choice. Please try again.")
