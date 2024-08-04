@@ -13,12 +13,6 @@ class FinanceTracker:
                 writer.writeheader()
 
     def add_entry(self, date, entry_type, amount, category, description):
-        try:
-            datetime.strptime(date, '%Y-%m-%d')  # Validate date format
-        except ValueError:
-            print("Invalid date format. Please enter date as YYYY-MM-DD.")
-            return
-
         with open(self.filename, mode='a', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=self.fields)
             writer.writerow({'date': date, 'type': entry_type, 'amount': amount,
@@ -51,21 +45,44 @@ class FinanceTracker:
         with open(self.filename, mode='r') as file:
             reader = csv.DictReader(file)
             for row in reader:
-                try:
-                    entry_date = datetime.strptime(row['date'], '%Y-%m-%d')
-                    if entry_date.month == month and entry_date.year == year:
-                        if row['type'] == 'Expense':
-                            total_expenses += float(row['amount'])
-                        elif row['type'] == 'Income':
-                            total_incomes += float(row['amount'])
-                except ValueError:
-                    print(f"Skipping invalid date format: {row['date']}")
+                entry_date = datetime.strptime(row['date'], '%Y-%m-%d')
+                if entry_date.month == month and entry_date.year == year:
+                    if row['type'] == 'Expense':
+                        total_expenses += float(row['amount'])
+                    elif row['type'] == 'Income':
+                        total_incomes += float(row['amount'])
 
         balance = total_incomes - total_expenses
         print(f"Monthly Report for {month}/{year}")
         print(f"Total Expenses: {total_expenses}")
         print(f"Total Incomes: {total_incomes}")
         print(f"Balance: {balance}")
+
+    def generate_category_report(self, category):
+        total_expenses = 0
+
+        with open(self.filename, mode='r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                if row['category'] == category and row['type'] == 'Expense':
+                    total_expenses += float(row['amount'])
+
+        print(f"Category Report for {category}")
+        print(f"Total Expenses: {total_expenses}")
+
+    def is_valid_date(self, date_str):
+        try:
+            datetime.strptime(date_str, '%Y-%m-%d')
+            return True
+        except ValueError:
+            return False
+
+    def is_valid_amount(self, amount_str):
+        try:
+            amount = float(amount_str)
+            return amount > 0
+        except ValueError:
+            return False
 
 
 if __name__ == "__main__":
@@ -78,18 +95,33 @@ if __name__ == "__main__":
         print("3. View Entries")
         print("4. Delete Entry")
         print("5. Generate Monthly Report")
-        print("6. Exit")
+        print("6. Generate Category Report")
+        print("7. Exit")
         choice = input("Choose an option: ")
 
         if choice == '1':
             date = input("Enter date (YYYY-MM-DD): ")
-            amount = float(input("Enter amount: "))
+            if not tracker.is_valid_date(date):
+                print("Invalid date format. Please enter date in YYYY-MM-DD format.")
+                continue
+            amount = input("Enter amount: ")
+            if not tracker.is_valid_amount(amount):
+                print("Invalid amount. Please enter a positive number.")
+                continue
+            amount = float(amount)
             category = input("Enter category: ")
             description = input("Enter description: ")
             tracker.add_entry(date, 'Expense', amount, category, description)
         elif choice == '2':
             date = input("Enter date (YYYY-MM-DD): ")
-            amount = float(input("Enter amount: "))
+            if not tracker.is_valid_date(date):
+                print("Invalid date format. Please enter date in YYYY-MM-DD format.")
+                continue
+            amount = input("Enter amount: ")
+            if not tracker.is_valid_amount(amount):
+                print("Invalid amount. Please enter a positive number.")
+                continue
+            amount = float(amount)
             category = input("Enter category: ")
             description = input("Enter description: ")
             tracker.add_entry(date, 'Income', amount, category, description)
@@ -97,8 +129,14 @@ if __name__ == "__main__":
             tracker.view_entries()
         elif choice == '4':
             date = input("Enter date (YYYY-MM-DD): ")
+            if not tracker.is_valid_date(date):
+                print("Invalid date format. Please enter date in YYYY-MM-DD format.")
+                continue
             entry_type = input("Enter type (Expense/Income): ")
             amount = input("Enter amount: ")
+            if not tracker.is_valid_amount(amount):
+                print("Invalid amount. Please enter a positive number.")
+                continue
             category = input("Enter category: ")
             description = input("Enter description: ")
             tracker.delete_entry(date, entry_type, amount,
@@ -108,6 +146,9 @@ if __name__ == "__main__":
             year = int(input("Enter year (YYYY): "))
             tracker.generate_monthly_report(month, year)
         elif choice == '6':
+            category = input("Enter category: ")
+            tracker.generate_category_report(category)
+        elif choice == '7':
             break
         else:
             print("Invalid choice. Please try again.")
